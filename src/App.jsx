@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import MindMap from './components/MindMap';
 import SummaryPanel from './components/SummaryPanel';
 import Toolbar from './components/Toolbar';
-import vitaminsData from './data/vitaminsData.json';
+import ReactData from './data/ReactData.json';
 
 const App = () => {
   const [selectedNode, setSelectedNode] = useState(null);
@@ -11,7 +11,7 @@ const App = () => {
   const [editData, setEditData] = useState({});
   const [allExpanded, setAllExpanded] = useState(false);
   const [showFullDoc, setShowFullDoc] = useState(false);
-  const [data, setData] = useState(vitaminsData);
+  const [data, setData] = useState(ReactData);
 
   // Handle node click
   const handleNodeClick = (node) => {

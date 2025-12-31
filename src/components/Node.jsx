@@ -58,10 +58,10 @@ const Node = ({
           </div>
         </div>
 
-        {/* Summary preview */}
+        {/* Summary preview
         <p className="text-sm text-white text-opacity-90 line-clamp-2">
           {node.summary}
-        </p>
+        </p> */}
 
         {/* Expand/collapse indicator */}
         {node.children && node.children.length > 0 && (

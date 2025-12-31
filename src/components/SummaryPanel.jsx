@@ -78,26 +78,26 @@ const SummaryPanel = ({
           <div className="mb-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-2xl font-bold text-white">{node.label}</h2>
-              <span className="text-xs bg-white bg-opacity-20 px-3 py-1 rounded-full text-white">
+              {/* <span className="text-xs bg-white bg-opacity-20 px-3 py-1 rounded-full text-white">
                 {node.type || 'node'}
-              </span>
+              </span> */}
             </div>
             <div className="text-sm text-gray-300 mb-2">
               ID: <code className="bg-gray-700 px-2 py-1 rounded">{node.id}</code>
             </div>
           </div>
 
-          <div className="mb-8">
+          {/* <div className="mb-8">
             <h3 className="text-lg font-semibold text-white mb-3">Summary</h3>
             <p className="text-gray-300 leading-relaxed">{node.summary}</p>
-          </div>
+          </div> */}
 
           <div className="mb-8">
             <h3 className="text-lg font-semibold text-white mb-3">Description</h3>
             <p className="text-gray-300 leading-relaxed">{node.description}</p>
           </div>
 
-          {node.metadata && Object.keys(node.metadata).length > 0 && (
+          {/* {node.metadata && Object.keys(node.metadata).length > 0 && (
             <div className="mb-8">
               <h3 className="text-lg font-semibold text-white mb-3">Metadata</h3>
               <div className="space-y-2">
@@ -121,7 +121,7 @@ const SummaryPanel = ({
                 ))}
               </div>
             </div>
-          )}
+          )} */}
 
           {node.children && node.children.length > 0 && (
             <div>

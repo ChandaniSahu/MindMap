@@ -1,0 +1,88 @@
+
+
+{
+  "id": "root",
+  "label": "React",
+  "description": "A JavaScript library for building user interfaces using a component-based approach.",
+  "type": "root",
+  "children": [
+    {
+      "id": "core",
+      "label": "Important Core Concepts of React ",
+      "description": "Fundamental concepts required to understand React.",
+      "type": "category",
+      "children": [
+        {
+          "id": "jsx",
+          "label": "JSX",
+          "description": "A syntax extension that allows HTML-like code in JavaScript.",
+          "type": "subcategory"
+        },
+        {
+          "id": "components",
+          "label": "Components",
+          "description": "Reusable pieces of UI that define how the interface looks and behaves.",
+          "type": "subcategory"
+        },
+        {
+          "id": "props",
+          "label": "Props",
+          "description": "Inputs passed from parent to child components.",
+          "type": "subcategory"
+        },
+        {
+          "id": "state",
+          "label": "State",
+          "description": "Data that controls a component’s behavior and rendering.",
+          "type": "subcategory"
+        }
+      ]
+    },
+    {
+      "id": "hooks",
+      "label": "Hooks",
+      "description": "Functions that let you use React features in function components.",
+      "type": "category",
+      "children": [
+        {
+          "id": "useState",
+          "label": "useState",
+          "description": "Allows functional components to store and update state.",
+          "type": "subcategory"
+        },
+        {
+          "id": "useEffect",
+          "label": "useEffect",
+          "description": "Handles side effects such as data fetching or subscriptions.",
+          "type": "subcategory"
+        },
+        {
+          "id": "useContext",
+          "label": "useContext",
+          "description": "Shares data across components without prop drilling.",
+          "type": "subcategory"
+        }
+      ]
+    },
+    {
+      "id": "advanced",
+      "label": "Advanced Concepts",
+      "description": "Concepts used to optimize and scale React applications.",
+      "type": "category",
+      "children": [
+        {
+          "id": "performance",
+          "label": "Performance Optimization",
+          "description": "Techniques to reduce re-renders and improve speed.",
+          "type": "subcategory"
+        },
+        {
+          "id": "memo",
+          "label": "Memoization",
+          "description": "Optimizes rendering using memo, useMemo, and useCallback.",
+          "type": "subcategory"
+        }
+      ]
+    }
+  ]
+}
