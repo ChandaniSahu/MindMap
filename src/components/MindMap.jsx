@@ -1,38 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import * as d3 from 'd3-hierarchy';
-
-// Node Component
-const Node = ({ node, isSelected, isHovered, isRelated, onClick, onHover, onEdit }) => {
-  return (
-    <div
-      className={`relative bg-gradient-to-br from-gray-800 to-gray-900 border-2 rounded-lg p-3 cursor-pointer transition-all duration-200 pointer-events-auto ${
-        isSelected ? 'border-blue-500 shadow-lg shadow-blue-500/50' :
-        isHovered ? 'border-purple-400 shadow-lg shadow-purple-400/50' :
-        isRelated ? 'border-gray-400' : 'border-gray-600'
-      }`}
-      style={{ 
-        width: '200px',
-        minHeight: '60px',
-        transform: isHovered || isSelected ? 'scale(1.05)' : 'scale(1)'
-      }}
-      onClick={(e) => {
-        e.stopPropagation();
-        onClick(node);
-      }}
-      onMouseEnter={() => onHover(node)}
-      onMouseLeave={() => onHover(null)}
-    >
-      <div className="text-white text-sm font-medium break-words">
-        {node.label || node.name || 'Node'}
-      </div>
-      {node.children && node.children.length > 0 && (
-        <div className="absolute -bottom-2 -right-2 bg-blue-600 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center">
-          {node.expanded ? '−' : '+'}
-        </div>
-      )}
-    </div>
-  );
-};
+import Node from './Node';
 
 const MindMap = ({
   data,
@@ -60,23 +28,37 @@ const MindMap = ({
   const [mindMapData, setMindMapData] = useState(() =>
     initializeExpandedState(data, true)
   );
+  const prevExpandedRef = useRef(expanded);
+  const dataIdRef = useRef(JSON.stringify(data));
 
-  // Calculate layout for visible nodes with improved spacing
+  // Calculate layout for visible nodes
   const layoutData = useMemo(() => {
     if (!mindMapData) return { nodes: [], links: [] };
 
     // Create hierarchy
     const root = d3.hierarchy(mindMapData, d => d.expanded ? d.children : []);
 
-    // Create tree layout with better spacing
+    // Node dimensions - nodes have min-width of 250px, but can be wider with content and padding (p-4 = 16px each side)
+    // Account for nodes potentially being 350-400px wide with content
+    const NODE_WIDTH = 400; // Conservative estimate for node width including content
+    const VERTICAL_SPACING = 90; // Reduced vertical spacing to prevent excessive distancing when expanding
+    // Calculate horizontal spacing: aggressively increase to prevent ALL sibling overlaps
+    // Use very large base spacing to ensure adequate gaps between all sibling nodes
+    const HORIZONTAL_SPACING = 800; // Base spacing in pixels - very large to prevent all overlaps
+
+    // Create tree layout
+    // nodeSize([height, width]) - height is vertical spacing (y-axis), width is horizontal spacing (x-axis)
     const treeLayout = d3.tree()
-      .nodeSize([120, 250]) // Increased vertical spacing significantly
+      .nodeSize([VERTICAL_SPACING, HORIZONTAL_SPACING])
       .separation((a, b) => {
-        // Better separation based on depth and sibling relationship
+        // For siblings (same parent), use very large multiplier to ensure no overlaps
+        // 800 * 2.5 = 2000px between centers, providing ~1600px gap for 400px nodes
+        // This ensures green (category) and purple (subcategory) siblings never overlap
         if (a.parent === b.parent) {
-          return 1.5; // More space between siblings
+          return 2.5;
         }
-        return 2; // Even more space between different branches
+        // For nodes at different levels, use standard spacing
+        return 1.0;
       });
 
     // Calculate positions
@@ -89,21 +71,15 @@ const MindMap = ({
     root.each(node => {
       nodes.push({
         ...node.data,
-        x: node.y, // Swap x and y for horizontal layout
-        y: node.x,
+        x: node.x,
+        y: node.y,
         depth: node.depth
       });
 
       if (node.parent) {
         links.push({
-          source: { 
-            x: node.parent.y, // Swap for horizontal layout
-            y: node.parent.x 
-          },
-          target: { 
-            x: node.y, // Swap for horizontal layout
-            y: node.x 
-          },
+          source: { x: node.parent.x, y: node.parent.y },
+          target: { x: node.x, y: node.y },
           sourceId: node.parent.data.id,
           targetId: node.data.id
         });
@@ -189,28 +165,60 @@ const MindMap = ({
     }
   }, [isDragging, dragStart]);
 
-  // Update expand all functionality
+  // Handle data and expanded state changes
   useEffect(() => {
-    const updateExpansion = (node, shouldExpand, isRoot = false) => {
-      return {
-        ...node,
-        expanded: isRoot ? true : shouldExpand,
-        children: node.children?.map(child => updateExpansion(child, shouldExpand, false))
-      };
-    };
-    setMindMapData(updateExpansion(data, expanded, true));
-  }, [expanded, data]);
+    const currentDataId = JSON.stringify(data);
+    const expandedChanged = prevExpandedRef.current !== expanded;
+    const dataChanged = dataIdRef.current !== currentDataId;
 
-  // Center the view on mount
-  useEffect(() => {
-    if (layoutData.nodes.length > 0) {
-      const rootNode = layoutData.nodes[0];
-      setPosition({
-        x: window.innerWidth / 2 - rootNode.x,
-        y: window.innerHeight / 2 - rootNode.y
-      });
+    // If expanded prop changed (expand all/collapse all), update all expanded states
+    if (expandedChanged) {
+      const updateExpansion = (node, shouldExpand, isRoot = false) => {
+        return {
+          ...node,
+          expanded: isRoot ? true : shouldExpand,
+          children: node.children?.map(child => updateExpansion(child, shouldExpand, false))
+        };
+      };
+      setMindMapData(updateExpansion(data, expanded, true));
+      prevExpandedRef.current = expanded;
+      dataIdRef.current = currentDataId;
+      return;
     }
-  }, []);
+
+    // If only data changed (add/edit node), preserve existing expanded states
+    if (dataChanged) {
+      setMindMapData(prevData => {
+        // Create a map of existing expanded states by node ID
+        const expandedStateMap = new Map();
+        const collectExpandedStates = (node) => {
+          if (node?.id !== undefined) {
+            expandedStateMap.set(node.id, node.expanded);
+          }
+          if (node?.children) {
+            node.children.forEach(collectExpandedStates);
+          }
+        };
+        collectExpandedStates(prevData);
+
+        // Merge new data with existing expanded states
+        const mergeExpandedStates = (node, isRoot = false) => {
+          const preservedExpanded = expandedStateMap.has(node.id) 
+            ? expandedStateMap.get(node.id)
+            : (isRoot ? true : false);
+
+          return {
+            ...node,
+            expanded: preservedExpanded,
+            children: node.children?.map(child => mergeExpandedStates(child, false))
+          };
+        };
+
+        return mergeExpandedStates(data, true);
+      });
+      dataIdRef.current = currentDataId;
+    }
+  }, [data, expanded]);
 
   return (
     <div
@@ -223,12 +231,15 @@ const MindMap = ({
         className="absolute inset-0"
         style={{
           transform: `translate(${position.x}px, ${position.y}px) scale(${zoom})`,
-          transformOrigin: '0 0',
+          transformOrigin: 'center center',
           transition: isDragging ? 'none' : 'transform 0.3s ease'
         }}
       >
         {/* SVG for connections */}
-        <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ overflow: 'visible' }}>
+        <svg 
+          className="absolute inset-0 w-full h-full pointer-events-none"
+          style={{ overflow: 'visible' }}
+        >
           <defs>
             <marker
               id="arrowhead"
@@ -253,27 +264,29 @@ const MindMap = ({
             >
               <polygon
                 points="0 0, 10 3.5, 0 7"
-                fill="#60a5fa"
+                fill="#9ca3af"
               />
             </marker>
           </defs>
           {layoutData.links.map((link, index) => {
             const isRelatedLink = relatedNodeIds.has(link.sourceId) && relatedNodeIds.has(link.targetId);
-            
-            // Calculate control points for smoother curves (horizontal flow)
+            // Create a smooth quadratic curve for clearer edge display
             const dx = link.target.x - link.source.x;
+            const dy = link.target.y - link.source.y;
             const midX = link.source.x + dx * 0.5;
-            
+            const midY = link.source.y + dy * 0.5;
+            // Small perpendicular offset for subtle curve
+            const perpX = -dy * 0.15;
+            const perpY = dx * 0.15;
             return (
               <path
                 key={`${link.sourceId}-${link.targetId}-${index}`}
-                d={`M ${link.source.x} ${link.source.y} C ${midX} ${link.source.y}, ${midX} ${link.target.y}, ${link.target.x} ${link.target.y}`}
-                stroke={isRelatedLink ? "#60a5fa" : "#64748b"}
-                strokeWidth={isRelatedLink ? "3" : "2"}
+                d={`M ${link.source.x} ${link.source.y} Q ${midX + perpX} ${midY + perpY} ${link.target.x} ${link.target.y}`}
+                stroke={isRelatedLink ? "#9ca3af" : "#64748b"}
+                strokeWidth={isRelatedLink ? "3" : "2.5"}
                 fill="none"
                 className="transition-all duration-300"
                 markerEnd={`url(#arrowhead${isRelatedLink ? '-related' : ''})`}
-                opacity={isRelatedLink ? 1 : 0.6}
               />
             );
           })}
@@ -283,12 +296,11 @@ const MindMap = ({
         {layoutData.nodes.map(node => (
           <div
             key={node.id}
-            className="absolute pointer-events-none"
+            className="absolute"
             style={{
-              left: node.x,
-              top: node.y,
-              transform: 'translate(-50%, -50%)',
-              transition: 'all 0.3s ease'
+              left: `${node.x}px`,
+              top: `${node.y}px`,
+              transform: 'translate(-50%, -50%)'
             }}
           >
             <Node
@@ -311,86 +323,20 @@ const MindMap = ({
       <div className="absolute bottom-4 right-4 flex items-center space-x-2 bg-gray-800 bg-opacity-50 p-2 rounded-lg">
         <button
           onClick={() => setZoom(prev => Math.max(0.5, prev * 0.9))}
-          className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-white"
+          className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded"
         >
           −
         </button>
         <span className="text-white text-sm">{Math.round(zoom * 100)}%</span>
         <button
           onClick={() => setZoom(prev => Math.min(3, prev * 1.1))}
-          className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-white"
+          className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded"
         >
           +
         </button>
-      </div>
-
-      {/* Instructions */}
-      <div className="absolute top-4 left-4 bg-gray-800 bg-opacity-80 p-3 rounded-lg text-white text-sm">
-        <div>• Drag to pan</div>
-        <div>• Ctrl + Scroll to zoom</div>
-        <div>• Click nodes to expand/collapse</div>
       </div>
     </div>
   );
 };
 
-// Demo wrapper
-export default function App() {
-  const [selectedNode, setSelectedNode] = useState(null);
-  const [hoveredNode, setHoveredNode] = useState(null);
-  const [expanded, setExpanded] = useState(false);
-
-  const sampleData = {
-    id: '1',
-    label: 'Root Concept',
-    children: [
-      {
-        id: '2',
-        label: 'Branch 1',
-        children: [
-          { id: '5', label: 'Leaf 1.1' },
-          { id: '6', label: 'Leaf 1.2' },
-          { id: '7', label: 'Leaf 1.3' }
-        ]
-      },
-      {
-        id: '3',
-        label: 'Branch 2',
-        children: [
-          { id: '8', label: 'Leaf 2.1' },
-          { id: '9', label: 'Leaf 2.2' }
-        ]
-      },
-      {
-        id: '4',
-        label: 'Branch 3',
-        children: [
-          { id: '10', label: 'Leaf 3.1' },
-          { id: '11', label: 'Leaf 3.2' },
-          { id: '12', label: 'Leaf 3.3' },
-          { id: '13', label: 'Leaf 3.4' }
-        ]
-      }
-    ]
-  };
-
-  return (
-    <div className="w-full h-screen">
-      <MindMap
-        data={sampleData}
-        selectedNode={selectedNode}
-        hoveredNode={hoveredNode}
-        onNodeClick={setSelectedNode}
-        onNodeHover={setHoveredNode}
-        onNodeEdit={() => {}}
-        expanded={expanded}
-      />
-      <button
-        onClick={() => setExpanded(!expanded)}
-        className="absolute top-4 right-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
-      >
-        {expanded ? 'Collapse All' : 'Expand All'}
-      </button>
-    </div>
-  );
-}
+export default MindMap;
