@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import MindMap from './components/MindMap';
 import SummaryPanel from './components/SummaryPanel';
 import Toolbar from './components/Toolbar';
-import DocumentationModal from './components/DocumentationModal';
 import ReactData from './data/ReactData.json';
 import jsPDF from 'jspdf';
 
@@ -12,8 +11,9 @@ const App = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({});
   const [allExpanded, setAllExpanded] = useState(false);
-  const [showFullDoc, setShowFullDoc] = useState(false);
   const [data, setData] = useState(ReactData);
+  const [fitViewTrigger, setFitViewTrigger] = useState(0);
+  const [isFitView, setIsFitView] = useState(false);
 
   // Handle node click
   const handleNodeClick = (node) => {
@@ -77,8 +77,12 @@ const App = () => {
   };
 
   const handleFitView = () => {
-    // In a real implementation, this would adjust zoom and position
-    console.log('Fit view');
+    // Trigger fit view by updating the trigger value
+    setFitViewTrigger(prev => prev + 1);
+  };
+
+  const handleFitViewStateChange = (isFit) => {
+    setIsFitView(isFit);
   };
 
   const handleAddNode = () => {
@@ -113,7 +117,18 @@ const App = () => {
   };
 
   const handleToggleFullDocumentation = () => {
-    setShowFullDoc(!showFullDoc);
+    // Open preview window with documentation (no download button, no modal)
+    const docWindow = window.open('', '_blank');
+    
+    if (!docWindow) {
+      alert('Please allow pop-ups to view documentation');
+      return;
+    }
+
+    const htmlContent = generateDocumentationHTML(data);
+    
+    docWindow.document.write(htmlContent);
+    docWindow.document.close();
   };
 
   const handleDownloadJSON = () => {
@@ -127,18 +142,8 @@ const App = () => {
   };
 
   const handleDownloadPDF = () => {
-    // Open preview window with download button (no immediate download)
-    const printWindow = window.open('', '_blank');
-    
-    if (!printWindow) {
-      alert('Please allow pop-ups to view PDF preview');
-      return;
-    }
-
-    const htmlContent = generatePDFHTML(data);
-    
-    printWindow.document.write(htmlContent);
-    printWindow.document.close();
+    // Directly download PDF without opening preview
+    generateAndDownloadPDF(data);
   };
 
   const generateAndDownloadPDF = (nodeData) => {
@@ -242,6 +247,120 @@ const App = () => {
     
     // Save the PDF
     pdf.save('mindmap-documentation.pdf');
+  };
+
+  const generateDocumentationHTML = (nodeData, level = 0) => {
+    const indent = level * 20;
+    let html = '';
+    
+    if (level === 0) {
+      html += `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Mind Map Documentation</title>
+          <style>
+            body {
+              font-family: Arial, sans-serif;
+              padding: 40px;
+              background: white;
+              color: #333;
+            }
+            h1 {
+              color: #2563eb;
+              border-bottom: 3px solid #2563eb;
+              padding-bottom: 10px;
+              margin-bottom: 30px;
+            }
+            h2 {
+              color: #1e40af;
+              margin-top: 20px;
+              margin-bottom: 10px;
+              font-size: 18px;
+            }
+            h3 {
+              color: #3b82f6;
+              margin-top: 15px;
+              margin-bottom: 8px;
+              font-size: 16px;
+            }
+            .node-section {
+              margin-bottom: 20px;
+              padding-left: ${indent}px;
+              border-left: 2px solid #e5e7eb;
+              padding-left: 20px;
+            }
+            .summary {
+              color: #666;
+              margin: 8px 0;
+              font-style: italic;
+            }
+            .description {
+              background: #f3f4f6;
+              padding: 12px;
+              border-radius: 4px;
+              margin: 8px 0;
+              white-space: pre-wrap;
+            }
+            .metadata {
+              background: #f9fafb;
+              padding: 10px;
+              border-radius: 4px;
+              margin: 8px 0;
+              font-family: monospace;
+              font-size: 12px;
+            }
+            .type-badge {
+              display: inline-block;
+              background: #dbeafe;
+              color: #1e40af;
+              padding: 4px 8px;
+              border-radius: 4px;
+              font-size: 12px;
+              margin: 4px 0;
+            }
+          </style>
+        </head>
+        <body>
+          <h1>🧠 Mind Map Documentation</h1>
+      `;
+    }
+    
+    html += `<div class="node-section" style="margin-left: ${indent}px;">`;
+    html += `<h${Math.min(level + 2, 4)}>${nodeData.label || 'Untitled Node'}</h${Math.min(level + 2, 4)}>`;
+    
+    if (nodeData.type) {
+      html += `<span class="type-badge">${nodeData.type}</span><br>`;
+    }
+    
+    if (nodeData.summary) {
+      html += `<p class="summary">${nodeData.summary}</p>`;
+    }
+    
+    if (nodeData.description) {
+      html += `<div class="description">${nodeData.description.replace(/\n/g, '<br>')}</div>`;
+    }
+    
+    if (nodeData.metadata) {
+      html += `<div class="metadata">${JSON.stringify(nodeData.metadata, null, 2).replace(/\n/g, '<br>').replace(/ /g, '&nbsp;')}</div>`;
+    }
+    
+    if (nodeData.children && nodeData.children.length > 0) {
+      nodeData.children.forEach(child => {
+        html += generateDocumentationHTML(child, level + 1);
+      });
+    }
+    
+    html += '</div>';
+    
+    if (level === 0) {
+      html += `
+        </body>
+        </html>
+      `;
+    }
+    
+    return html;
   };
 
   const generatePDFHTML = (nodeData, level = 0) => {
@@ -548,6 +667,7 @@ const App = () => {
         onToggleFullDocumentation={handleToggleFullDocumentation}
         onDownloadJSON={handleDownloadJSON}
         onDownloadPDF={handleDownloadPDF}
+        isFitView={isFitView}
       />
 
       <div className="flex flex-1 overflow-hidden">
@@ -560,6 +680,8 @@ const App = () => {
             onNodeHover={setHoveredNode}
             onNodeEdit={handleNodeEdit}
             expanded={allExpanded}
+            fitViewTrigger={fitViewTrigger}
+            onFitViewStateChange={handleFitViewStateChange}
           />
           
           {/* Hover Tooltip */}
@@ -599,12 +721,6 @@ const App = () => {
         </div>
       </div>
 
-      {/* Full Documentation Modal */}
-      <DocumentationModal
-        isOpen={showFullDoc}
-        onClose={handleToggleFullDocumentation}
-        data={data}
-      />
     </div>
   );
 };

@@ -9,7 +9,9 @@ const MindMap = ({
   onNodeClick,
   onNodeHover,
   onNodeEdit,
-  expanded
+  expanded,
+  fitViewTrigger,
+  onFitViewStateChange
 }) => {
   const [zoom, setZoom] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -30,6 +32,8 @@ const MindMap = ({
   );
   const prevExpandedRef = useRef(expanded);
   const dataIdRef = useRef(JSON.stringify(data));
+  const containerRef = useRef(null);
+  const isFitViewRef = useRef(false);
 
   // Calculate layout for visible nodes
   const layoutData = useMemo(() => {
@@ -88,7 +92,40 @@ const MindMap = ({
       }
     });
 
-    return { nodes, links };
+    // Calculate bounds for fit view
+    let bounds = null;
+    if (nodes.length > 0) {
+      let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+      nodes.forEach(node => {
+        // Account for node dimensions (approximately 400px width, 80px height with transform center)
+        const nodeHalfWidth = 200;
+        const nodeHalfHeight = 40;
+        minX = Math.min(minX, node.x - nodeHalfWidth);
+        maxX = Math.max(maxX, node.x + nodeHalfWidth);
+        minY = Math.min(minY, node.y - nodeHalfHeight);
+        maxY = Math.max(maxY, node.y + nodeHalfHeight);
+      });
+
+      // Add padding around bounds
+      const padding = 50;
+      const paddedMinX = minX - padding;
+      const paddedMaxX = maxX + padding;
+      const paddedMinY = minY - padding;
+      const paddedMaxY = maxY + padding;
+      
+      bounds = {
+        minX: paddedMinX,
+        maxX: paddedMaxX,
+        minY: paddedMinY,
+        maxY: paddedMaxY,
+        width: paddedMaxX - paddedMinX,
+        height: paddedMaxY - paddedMinY,
+        centerX: (paddedMinX + paddedMaxX) / 2,
+        centerY: (paddedMinY + paddedMaxY) / 2
+      };
+    }
+
+    return { nodes, links, bounds };
   }, [mindMapData]);
 
   // Calculate related nodes for highlighting
@@ -222,8 +259,52 @@ const MindMap = ({
     }
   }, [data, expanded]);
 
+  // Handle fit view request - toggle between fit view and normal view
+  // Only trigger when fitViewTrigger changes, not when layoutData.bounds changes
+  useEffect(() => {
+    if (fitViewTrigger > 0 && containerRef.current) {
+      if (isFitViewRef.current) {
+        // Reset to normal view
+        setZoom(1);
+        setPosition({ x: 0, y: 0 });
+        isFitViewRef.current = false;
+        if (onFitViewStateChange) {
+          onFitViewStateChange(false);
+        }
+      } else if (layoutData.bounds) {
+        // Apply fit view
+        const container = containerRef.current;
+        const containerWidth = container.clientWidth;
+        const containerHeight = container.clientHeight;
+        
+        const bounds = layoutData.bounds;
+        const contentWidth = bounds.width;
+        const contentHeight = bounds.height;
+
+        // Calculate zoom to fit content with some padding
+        const scaleX = containerWidth / contentWidth;
+        const scaleY = containerHeight / contentHeight;
+        const newZoom = Math.min(scaleX, scaleY, 2); // Cap zoom at 2x to prevent too much zoom
+        
+        // Center the content
+        const newPosition = {
+          x: containerWidth / 2 - bounds.centerX * newZoom,
+          y: containerHeight / 2 - bounds.centerY * newZoom
+        };
+
+        setZoom(newZoom);
+        setPosition(newPosition);
+        isFitViewRef.current = true;
+        if (onFitViewStateChange) {
+          onFitViewStateChange(true);
+        }
+      }
+    }
+  }, [fitViewTrigger]); // Only depend on fitViewTrigger, not layoutData.bounds
+
   return (
     <div
+      ref={containerRef}
       className="relative w-full h-full overflow-hidden bg-gradient-to-br from-gray-900 to-black"
       onMouseDown={handleMouseDown}
       onWheel={handleWheel}

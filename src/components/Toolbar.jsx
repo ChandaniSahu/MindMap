@@ -7,7 +7,8 @@ const Toolbar = ({
   onAddNode,
   onToggleFullDocumentation,
   onDownloadJSON,
-  onDownloadPDF
+  onDownloadPDF,
+  isFitView
 }) => {
   const [showDownloadDropdown, setShowDownloadDropdown] = useState(false);
   const dropdownRef = useRef(null);
@@ -40,7 +41,11 @@ const Toolbar = ({
   const buttons = [
     { label: 'Expand All', icon: '↕️', onClick: onExpandAll },
     { label: 'Collapse All', icon: '↔️', onClick: onCollapseAll },
-    { label: 'Fit View', icon: '🔍', onClick: onFitView },
+    { 
+      label: isFitView ? 'Reset View' : 'Fit View', 
+      icon: isFitView ? '↺' : '🔍', 
+      onClick: onFitView 
+    },
     { label: 'Add Node', icon: '➕', onClick: onAddNode },
     { label: 'Full Documentation', icon: '📄', onClick: onToggleFullDocumentation },
   ];
@@ -72,6 +77,7 @@ const Toolbar = ({
               onClick={() => setShowDownloadDropdown(!showDownloadDropdown)}
               className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition text-white flex items-center space-x-2"
             >
+              <span>📥</span>
               <span>Download</span>
               <span className="text-xs">▼</span>
             </button>
