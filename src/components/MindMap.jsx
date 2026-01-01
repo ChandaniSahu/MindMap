@@ -41,19 +41,18 @@ const MindMap = ({
     // Node dimensions - nodes have min-width of 250px, but can be wider with content and padding (p-4 = 16px each side)
     // Account for nodes potentially being 350-400px wide with content
     const NODE_WIDTH = 400; // Conservative estimate for node width including content
-    const VERTICAL_SPACING = 90; // Reduced vertical spacing to prevent excessive distancing when expanding
-    // Calculate horizontal spacing: aggressively increase to prevent ALL sibling overlaps
-    // Use very large base spacing to ensure adequate gaps between all sibling nodes
-    const HORIZONTAL_SPACING = 800; // Base spacing in pixels - very large to prevent all overlaps
+    const NODE_HEIGHT = 80; // Node height estimate
+    // For horizontal layout: horizontal spacing is between levels (depth), vertical spacing is between siblings
+    const HORIZONTAL_SPACING = 800; // Spacing between levels (left to right)
+    const VERTICAL_SPACING = 90; // Spacing between siblings (top to bottom)
 
-    // Create tree layout
-    // nodeSize([height, width]) - height is vertical spacing (y-axis), width is horizontal spacing (x-axis)
+    // Create tree layout - default is vertical (top to bottom)
+    // For horizontal layout, we'll swap x and y coordinates after calculation
     const treeLayout = d3.tree()
-      .nodeSize([VERTICAL_SPACING, HORIZONTAL_SPACING])
+      .nodeSize([VERTICAL_SPACING, HORIZONTAL_SPACING]) // [vertical between siblings, horizontal between levels]
       .separation((a, b) => {
         // For siblings (same parent), use very large multiplier to ensure no overlaps
-        // 800 * 2.5 = 2000px between centers, providing ~1600px gap for 400px nodes
-        // This ensures green (category) and purple (subcategory) siblings never overlap
+        // 90 * 2.5 = 225px between centers vertically, providing adequate spacing
         if (a.parent === b.parent) {
           return 2.5;
         }
@@ -61,25 +60,28 @@ const MindMap = ({
         return 1.0;
       });
 
-    // Calculate positions
+    // Calculate positions (this gives us vertical layout)
     treeLayout(root);
 
-    // Convert to flat array with positions
+    // Convert to flat array with positions and swap x/y for horizontal layout
     const nodes = [];
     const links = [];
 
     root.each(node => {
+      // Swap x and y to make it horizontal (left to right)
+      // In d3.tree: x is horizontal position, y is vertical position
+      // For horizontal tree: we want depth to go left-right, siblings to go top-bottom
       nodes.push({
         ...node.data,
-        x: node.x,
-        y: node.y,
+        x: node.y, // Swap: use y (depth) as horizontal position
+        y: node.x, // Swap: use x (sibling position) as vertical position
         depth: node.depth
       });
 
       if (node.parent) {
         links.push({
-          source: { x: node.parent.x, y: node.parent.y },
-          target: { x: node.x, y: node.y },
+          source: { x: node.parent.y, y: node.parent.x }, // Swap coordinates
+          target: { x: node.y, y: node.x }, // Swap coordinates
           sourceId: node.parent.data.id,
           targetId: node.data.id
         });
