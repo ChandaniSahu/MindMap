@@ -26,12 +26,38 @@ Visit here : [https://chandani-mindmap.netlify.app/](https://chandani-mindmap.ne
 - **Node.jsx**: Individual node component with visual styling based on node type and interaction handling
 - **SummaryPanel.jsx**: Side panel displaying detailed information about selected nodes and providing editing capabilities
 - **Toolbar.jsx**: Top navigation bar with action buttons for mind map manipulation and export functions
+- **ReactData.json**:It is json data on the basis data is rendering in UI
 
   ### Node Interaction
 
    - **Node Hover**: Node(Hover) -> Shows title and description
    - **Node Click**: Node(Click) -> In sidepanel show title and description & child details
 
+  ## Features
+
+  ### Full Documentation 
+
+    Opens a separate page showing complete details of all nodes together.
+
+  ### Expend All 
+    
+    Expands all collapsed nodes and shows the full mind map.
+
+  ### Collapse All 
+
+    Collapses all nodes to show only top-level structure.
+
+  ### Fit View / Reset View 
+
+    Automatically centers and scales the mind map to fit the screen.
+
+  ### Add Node 
+    
+    Allows users to create a new node dynamically and attach it to the mind map.
+
+  ### Download 
+
+   User can download pdf as well as json data (raw/updated)  
 
 ## Data Flow (JSON → UI)
 

@@ -11,7 +11,8 @@ const MindMap = ({
   onNodeEdit,
   expanded,
   fitViewTrigger,
-  onFitViewStateChange
+  onFitViewStateChange,
+  collapseAllTrigger
 }) => {
   const [zoom, setZoom] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -213,6 +214,7 @@ const MindMap = ({
     // If expanded prop changed (expand all/collapse all), update all expanded states
     if (expandedChanged) {
       const updateExpansion = (node, shouldExpand, isRoot = false) => {
+        // Root always stays expanded, children follow shouldExpand
         return {
           ...node,
           expanded: isRoot ? true : shouldExpand,
@@ -258,6 +260,20 @@ const MindMap = ({
       dataIdRef.current = currentDataId;
     }
   }, [data, expanded]);
+
+  // Handle collapse all trigger - force collapse all nodes
+  useEffect(() => {
+    if (collapseAllTrigger > 0) {
+      const updateExpansion = (node, isRoot = false) => {
+        return {
+          ...node,
+          expanded: isRoot ? true : false, // Root stays expanded, all children collapsed
+          children: node.children?.map(child => updateExpansion(child, false))
+        };
+      };
+      setMindMapData(updateExpansion(data, true));
+    }
+  }, [collapseAllTrigger, data]);
 
   // Handle fit view request - toggle between fit view and normal view
   // Only trigger when fitViewTrigger changes, not when layoutData.bounds changes

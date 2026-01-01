@@ -14,6 +14,7 @@ const App = () => {
   const [data, setData] = useState(ReactData);
   const [fitViewTrigger, setFitViewTrigger] = useState(0);
   const [isFitView, setIsFitView] = useState(false);
+  const [collapseAllTrigger, setCollapseAllTrigger] = useState(0);
 
   // Handle node click
   const handleNodeClick = (node) => {
@@ -74,6 +75,8 @@ const App = () => {
 
   const handleCollapseAll = () => {
     setAllExpanded(false);
+    // Use trigger to force collapse even if allExpanded was already false
+    setCollapseAllTrigger(prev => prev + 1);
   };
 
   const handleFitView = () => {
@@ -682,6 +685,7 @@ const App = () => {
             expanded={allExpanded}
             fitViewTrigger={fitViewTrigger}
             onFitViewStateChange={handleFitViewStateChange}
+            collapseAllTrigger={collapseAllTrigger}
           />
           
           {/* Hover Tooltip */}
