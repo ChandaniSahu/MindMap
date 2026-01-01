@@ -4,6 +4,7 @@ import SummaryPanel from './components/SummaryPanel';
 import Toolbar from './components/Toolbar';
 import DocumentationModal from './components/DocumentationModal';
 import ReactData from './data/ReactData.json';
+import jsPDF from 'jspdf';
 
 const App = () => {
   const [selectedNode, setSelectedNode] = useState(null);
@@ -126,12 +127,11 @@ const App = () => {
   };
 
   const handleDownloadPDF = () => {
-    // Create a simple PDF using browser print functionality
-    // For a more advanced solution, you could use jsPDF library
+    // Open preview window with download button (no immediate download)
     const printWindow = window.open('', '_blank');
     
     if (!printWindow) {
-      alert('Please allow pop-ups to download PDF');
+      alert('Please allow pop-ups to view PDF preview');
       return;
     }
 
@@ -139,13 +139,109 @@ const App = () => {
     
     printWindow.document.write(htmlContent);
     printWindow.document.close();
-    
-    // Wait for content to load, then trigger print/save as PDF
-    printWindow.onload = () => {
-      setTimeout(() => {
-        printWindow.print();
-      }, 250);
+  };
+
+  const generateAndDownloadPDF = (nodeData) => {
+    const pdf = new jsPDF();
+    let yPosition = 20;
+    const pageHeight = pdf.internal.pageSize.height;
+    const margin = 20;
+    const lineHeight = 7;
+    const maxWidth = pdf.internal.pageSize.width - (margin * 2);
+
+    const addText = (text, fontSize = 12, isBold = false, color = [0, 0, 0]) => {
+      if (yPosition > pageHeight - 30) {
+        pdf.addPage();
+        yPosition = margin;
+      }
+      
+      pdf.setFontSize(fontSize);
+      pdf.setFont('helvetica', isBold ? 'bold' : 'normal');
+      pdf.setTextColor(color[0], color[1], color[2]);
+      
+      const lines = pdf.splitTextToSize(text, maxWidth);
+      lines.forEach((line) => {
+        if (yPosition > pageHeight - 30) {
+          pdf.addPage();
+          yPosition = margin;
+        }
+        pdf.text(line, margin, yPosition);
+        yPosition += lineHeight;
+      });
     };
+
+    // Title
+    addText('🧠 Mind Map Documentation', 20, true, [37, 99, 235]);
+    yPosition += 10;
+
+    // Recursive function to add node content
+    const addNodeToPDF = (node, level = 0) => {
+      const indent = level * 10;
+      
+      // Node label
+      const headingSize = level === 0 ? 16 : level === 1 ? 14 : 12;
+      addText(node.label || 'Untitled Node', headingSize, true, [30, 64, 175]);
+      
+      // Type badge
+      if (node.type) {
+        addText(`Type: ${node.type}`, 10, false, [59, 130, 246]);
+      }
+      
+      // Summary
+      if (node.summary) {
+        yPosition += 3;
+        addText(node.summary, 11, false, [107, 114, 128]);
+      }
+      
+      // Description
+      if (node.description) {
+        yPosition += 5;
+        const descLines = pdf.splitTextToSize(node.description, maxWidth - 10);
+        descLines.forEach((line) => {
+          if (yPosition > pageHeight - 30) {
+            pdf.addPage();
+            yPosition = margin;
+          }
+          pdf.setFontSize(10);
+          pdf.setFont('helvetica', 'normal');
+          pdf.setTextColor(75, 85, 99);
+          pdf.text(line, margin + 5, yPosition);
+          yPosition += lineHeight - 1;
+        });
+      }
+      
+      // Metadata
+      if (node.metadata) {
+        yPosition += 5;
+        pdf.setFontSize(9);
+        pdf.setFont('courier', 'normal');
+        pdf.setTextColor(107, 114, 128);
+        const metaText = JSON.stringify(node.metadata, null, 2);
+        const metaLines = pdf.splitTextToSize(metaText, maxWidth - 10);
+        metaLines.forEach((line) => {
+          if (yPosition > pageHeight - 30) {
+            pdf.addPage();
+            yPosition = margin;
+          }
+          pdf.text(line, margin + 5, yPosition);
+          yPosition += lineHeight - 1;
+        });
+      }
+      
+      yPosition += 5;
+      
+      // Children
+      if (node.children && node.children.length > 0) {
+        node.children.forEach(child => {
+          addNodeToPDF(child, level + 1);
+        });
+      }
+    };
+
+    addNodeToPDF(nodeData);
+    
+    // Save the PDF
+    pdf.save('mindmap-documentation.pdf');
   };
 
   const generatePDFHTML = (nodeData, level = 0) => {
@@ -153,17 +249,50 @@ const App = () => {
     let html = '';
     
     if (level === 0) {
+      const dataJson = JSON.stringify(data);
       html += `
         <!DOCTYPE html>
         <html>
         <head>
           <title>Mind Map Documentation</title>
+          <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
           <style>
             body {
               font-family: Arial, sans-serif;
               padding: 40px;
               background: white;
               color: #333;
+            }
+            .download-container {
+              position: fixed;
+              top: 20px;
+              right: 20px;
+              z-index: 1000;
+            }
+            .download-btn {
+              background: #2563eb;
+              color: white;
+              border: none;
+              padding: 12px 24px;
+              border-radius: 8px;
+              font-size: 16px;
+              font-weight: bold;
+              cursor: pointer;
+              box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+              transition: all 0.3s;
+              opacity: 0.8;
+            }
+            .download-btn:hover {
+              background: #1d4ed8;
+              transform: translateY(-2px);
+              box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+            }
+            .download-btn:active {
+              transform: translateY(0);
+            }
+            .download-btn:disabled {
+              opacity: 0.5;
+              cursor: not-allowed;
             }
             h1 {
               color: #2563eb;
@@ -219,6 +348,9 @@ const App = () => {
               margin: 4px 0;
             }
             @media print {
+              .download-container {
+                display: none;
+              }
               body {
                 padding: 20px;
               }
@@ -226,6 +358,9 @@ const App = () => {
           </style>
         </head>
         <body>
+          <div class="download-container">
+            <button class="download-btn" onclick="downloadPDF()" id="pdfDownloadBtn">📥 Download PDF</button>
+          </div>
           <h1>🧠 Mind Map Documentation</h1>
       `;
     }
@@ -258,7 +393,135 @@ const App = () => {
     html += '</div>';
     
     if (level === 0) {
+      const dataJson = JSON.stringify(data).replace(/</g, '\\u003c').replace(/>/g, '\\u003e');
       html += `
+          <script>
+            const mindMapData = ${dataJson};
+            
+            function downloadPDF() {
+              const btn = document.getElementById('pdfDownloadBtn');
+              if (btn) {
+                btn.disabled = true;
+                btn.textContent = '⏳ Generating PDF...';
+              }
+              
+              try {
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF();
+              let yPosition = 20;
+              const pageHeight = pdf.internal.pageSize.height;
+              const margin = 20;
+              const lineHeight = 7;
+              const maxWidth = pdf.internal.pageSize.width - (margin * 2);
+
+              const addText = (text, fontSize = 12, isBold = false, color = [0, 0, 0]) => {
+                if (yPosition > pageHeight - 30) {
+                  pdf.addPage();
+                  yPosition = margin;
+                }
+                
+                pdf.setFontSize(fontSize);
+                pdf.setFont('helvetica', isBold ? 'bold' : 'normal');
+                pdf.setTextColor(color[0], color[1], color[2]);
+                
+                const lines = pdf.splitTextToSize(text, maxWidth);
+                lines.forEach((line) => {
+                  if (yPosition > pageHeight - 30) {
+                    pdf.addPage();
+                    yPosition = margin;
+                  }
+                  pdf.text(line, margin, yPosition);
+                  yPosition += lineHeight;
+                });
+              };
+
+              // Title
+              addText('Mind Map Documentation', 20, true, [37, 99, 235]);
+              yPosition += 10;
+
+              // Recursive function to add node content
+              const addNodeToPDF = (node, level = 0) => {
+                const headingSize = level === 0 ? 16 : level === 1 ? 14 : 12;
+                addText(node.label || 'Untitled Node', headingSize, true, [30, 64, 175]);
+                
+                if (node.type) {
+                  addText('Type: ' + node.type, 10, false, [59, 130, 246]);
+                }
+                
+                if (node.summary) {
+                  yPosition += 3;
+                  addText(node.summary, 11, false, [107, 114, 128]);
+                }
+                
+                if (node.description) {
+                  yPosition += 5;
+                  const descLines = pdf.splitTextToSize(node.description, maxWidth - 10);
+                  descLines.forEach((line) => {
+                    if (yPosition > pageHeight - 30) {
+                      pdf.addPage();
+                      yPosition = margin;
+                    }
+                    pdf.setFontSize(10);
+                    pdf.setFont('helvetica', 'normal');
+                    pdf.setTextColor(75, 85, 99);
+                    pdf.text(line, margin + 5, yPosition);
+                    yPosition += lineHeight - 1;
+                  });
+                }
+                
+                if (node.metadata) {
+                  yPosition += 5;
+                  pdf.setFontSize(9);
+                  pdf.setFont('courier', 'normal');
+                  pdf.setTextColor(107, 114, 128);
+                  const metaText = JSON.stringify(node.metadata, null, 2);
+                  const metaLines = pdf.splitTextToSize(metaText, maxWidth - 10);
+                  metaLines.forEach((line) => {
+                    if (yPosition > pageHeight - 30) {
+                      pdf.addPage();
+                      yPosition = margin;
+                    }
+                    pdf.text(line, margin + 5, yPosition);
+                    yPosition += lineHeight - 1;
+                  });
+                }
+                
+                yPosition += 5;
+                
+                if (node.children && node.children.length > 0) {
+                  node.children.forEach(child => {
+                    addNodeToPDF(child, level + 1);
+                  });
+                }
+              };
+
+              addNodeToPDF(mindMapData);
+              
+              // Save the PDF
+              pdf.save('mindmap-documentation.pdf');
+              
+              if (btn) {
+                btn.disabled = false;
+                btn.textContent = '📥 Download PDF';
+              }
+            } catch (error) {
+              console.error('Error generating PDF:', error);
+              alert('Error generating PDF. Please try again.');
+              if (btn) {
+                btn.disabled = false;
+                btn.textContent = '📥 Download PDF';
+              }
+            }
+          }
+
+            // Wait for jsPDF to load
+            window.onload = function() {
+              const btn = document.querySelector('.download-btn');
+              if (btn) {
+                btn.style.opacity = '1';
+              }
+            };
+          </script>
         </body>
         </html>
       `;
@@ -266,6 +529,7 @@ const App = () => {
     
     return html;
   };
+
 
   // Hover effects
   useEffect(() => {
