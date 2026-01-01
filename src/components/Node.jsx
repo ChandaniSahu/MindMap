@@ -1,4 +1,5 @@
 import React from 'react';
+import { FaEdit } from "react-icons/fa";
 
 const Node = ({
   node,
@@ -30,20 +31,20 @@ const Node = ({
       <div
         className={`relative p-4 rounded-lg shadow-lg cursor-pointer transform transition-all duration-300 hover:scale-105 hover:shadow-xl
           ${bgColor}
-          ${isSelected ? 'ring-4 ring-blue-400 ring-opacity-50' : ''}
+          ${isSelected ? 'ring-4 ring-yellow-700 ring-opacity-50' : ''}
           ${isHovered ? 'ring-2 ring-white ring-opacity-30' : ''}
           ${isRelated && !isHovered ? 'ring-1 ring-gray-400 ring-opacity-50' : ''}
-          min-w-[250px]
+          min-w-[300px]
         `}
         onClick={() => onClick(node)}
       >
         {/* Node content */}
         <div className="flex items-center justify-between mb-2">
-          <h3 className="text-lg font-bold text-white truncate">{node.label}</h3>
-          <div className="flex items-center space-x-2">
+          <h3 className="text-lg font-bold text-white truncate max-w-[200px]">{node.label}</h3>
+          <div className="flex items-center space-x-2 absolute right-0 top-0">
             {node.children && node.children.length > 0 && (
               <span className="text-xs bg-white bg-opacity-20 px-2 py-1 rounded-full">
-                {node.children.length} child{node.children.length !== 1 ? 'ren' : ''}
+                {node.children.length} 
               </span>
             )}
             <button
@@ -51,17 +52,13 @@ const Node = ({
                 e.stopPropagation();
                 onEdit(node);
               }}
-              className="text-xs bg-white bg-opacity-20 hover:bg-opacity-30 px-2 py-1 rounded transition"
+              className="text-xs bg-opacity-20 hover:bg-opacity-30 px-2 py-1 rounded transition cursor-pointer"
             >
-              Edit
+              <FaEdit className='text-white w-6 h-6'/>
             </button>
           </div>
         </div>
 
-        {/* Summary preview
-        <p className="text-sm text-white text-opacity-90 line-clamp-2">
-          {node.summary}
-        </p> */}
 
         {/* Expand/collapse indicator */}
         {node.children && node.children.length > 0 && (

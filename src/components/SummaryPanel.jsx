@@ -36,16 +36,6 @@ const SummaryPanel = ({
             />
           </div>
 
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Summary
-            </label>
-            <textarea
-              value={editData.summary || ''}
-              onChange={(e) => onEditChange('summary', e.target.value)}
-              className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white h-24"
-            />
-          </div>
 
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -78,50 +68,17 @@ const SummaryPanel = ({
           <div className="mb-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-2xl font-bold text-white">{node.label}</h2>
-              {/* <span className="text-xs bg-white bg-opacity-20 px-3 py-1 rounded-full text-white">
-                {node.type || 'node'}
-              </span> */}
             </div>
             <div className="text-sm text-gray-300 mb-2">
               ID: <code className="bg-gray-700 px-2 py-1 rounded">{node.id}</code>
             </div>
           </div>
 
-          {/* <div className="mb-8">
-            <h3 className="text-lg font-semibold text-white mb-3">Summary</h3>
-            <p className="text-gray-300 leading-relaxed">{node.summary}</p>
-          </div> */}
 
           <div className="mb-8">
             <h3 className="text-lg font-semibold text-white mb-3">Description</h3>
             <p className="text-gray-300 leading-relaxed">{node.description}</p>
           </div>
-
-          {/* {node.metadata && Object.keys(node.metadata).length > 0 && (
-            <div className="mb-8">
-              <h3 className="text-lg font-semibold text-white mb-3">Metadata</h3>
-              <div className="space-y-2">
-                {Object.entries(node.metadata).map(([key, value]) => (
-                  <div key={key} className="bg-gray-700 rounded-lg p-3">
-                    <div className="text-sm font-medium text-gray-400 capitalize">
-                      {key.replace(/([A-Z])/g, ' $1').trim()}
-                    </div>
-                    <div className="text-white mt-1">
-                      {Array.isArray(value) ? (
-                        <ul className="list-disc pl-5 space-y-1">
-                          {value.map((item, index) => (
-                            <li key={index}>{item}</li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <span>{value}</span>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )} */}
 
           {node.children && node.children.length > 0 && (
             <div>
@@ -133,7 +90,7 @@ const SummaryPanel = ({
                     className="bg-gray-700 hover:bg-gray-600 rounded-lg p-3 transition cursor-pointer"
                   >
                     <div className="font-medium text-white">{child.label}</div>
-                    <div className="text-sm text-gray-300 truncate">{child.summary}</div>
+                    <div className="text-sm text-gray-300 truncate">{child.description}</div>
                   </div>
                 ))}
               </div>

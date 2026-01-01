@@ -176,7 +176,7 @@ const App = () => {
     };
 
     // Title
-    addText('🧠 Mind Map Documentation', 20, true, [37, 99, 235]);
+    addText('Mind Map Documentation', 20, true, [37, 99, 235]);
     yPosition += 10;
 
     // Recursive function to add node content
@@ -688,9 +688,9 @@ const App = () => {
           {hoveredNode && !isEditing && (
             <div className="absolute top-4 left-4 bg-gray-800 bg-opacity-90 border border-gray-700 rounded-lg p-4 max-w-xs shadow-2xl">
               <h4 className="font-bold text-white mb-2">{hoveredNode.label}</h4>
-              <p className="text-sm text-gray-300">{hoveredNode.summary}</p>
+              <p className="text-sm text-gray-300">{hoveredNode.description}</p>
               <div className="mt-2 text-xs text-gray-400">
-                Click for details • Hovering
+                Click for details 
               </div>
             </div>
           )}

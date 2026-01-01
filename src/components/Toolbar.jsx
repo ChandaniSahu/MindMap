@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 
+
 const Toolbar = ({
   onExpandAll,
   onCollapseAll,
@@ -77,8 +78,9 @@ const Toolbar = ({
               onClick={() => setShowDownloadDropdown(!showDownloadDropdown)}
               className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition text-white flex items-center space-x-2"
             >
-              <span>📥</span>
-              <span>Download</span>
+             {/* <FiDownload/> */}
+             <span>Download</span>
+
               <span className="text-xs">▼</span>
             </button>
             {showDownloadDropdown && (
@@ -99,9 +101,6 @@ const Toolbar = ({
                 </button>
               </div>
             )}
-          </div>
-          <div className="text-sm text-gray-400">
-            <span className="text-green-400">●</span> Interactive Visualization
           </div>
         </div>
       </div>
