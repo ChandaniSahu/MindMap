@@ -115,7 +115,7 @@ const App = () => {
     setShowFullDoc(!showFullDoc);
   };
 
-  const handleDownload = () => {
+  const handleDownloadJSON = () => {
     const dataStr = JSON.stringify(data, null, 2);
     const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
     const exportFileDefaultName = 'mindmap-data.json';
@@ -123,6 +123,148 @@ const App = () => {
     linkElement.setAttribute('href', dataUri);
     linkElement.setAttribute('download', exportFileDefaultName);
     linkElement.click();
+  };
+
+  const handleDownloadPDF = () => {
+    // Create a simple PDF using browser print functionality
+    // For a more advanced solution, you could use jsPDF library
+    const printWindow = window.open('', '_blank');
+    
+    if (!printWindow) {
+      alert('Please allow pop-ups to download PDF');
+      return;
+    }
+
+    const htmlContent = generatePDFHTML(data);
+    
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+    
+    // Wait for content to load, then trigger print/save as PDF
+    printWindow.onload = () => {
+      setTimeout(() => {
+        printWindow.print();
+      }, 250);
+    };
+  };
+
+  const generatePDFHTML = (nodeData, level = 0) => {
+    const indent = level * 20;
+    let html = '';
+    
+    if (level === 0) {
+      html += `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Mind Map Documentation</title>
+          <style>
+            body {
+              font-family: Arial, sans-serif;
+              padding: 40px;
+              background: white;
+              color: #333;
+            }
+            h1 {
+              color: #2563eb;
+              border-bottom: 3px solid #2563eb;
+              padding-bottom: 10px;
+              margin-bottom: 30px;
+            }
+            h2 {
+              color: #1e40af;
+              margin-top: 20px;
+              margin-bottom: 10px;
+              font-size: 18px;
+            }
+            h3 {
+              color: #3b82f6;
+              margin-top: 15px;
+              margin-bottom: 8px;
+              font-size: 16px;
+            }
+            .node-section {
+              margin-bottom: 20px;
+              padding-left: ${indent}px;
+              border-left: 2px solid #e5e7eb;
+              padding-left: 20px;
+            }
+            .summary {
+              color: #666;
+              margin: 8px 0;
+              font-style: italic;
+            }
+            .description {
+              background: #f3f4f6;
+              padding: 12px;
+              border-radius: 4px;
+              margin: 8px 0;
+              white-space: pre-wrap;
+            }
+            .metadata {
+              background: #f9fafb;
+              padding: 10px;
+              border-radius: 4px;
+              margin: 8px 0;
+              font-family: monospace;
+              font-size: 12px;
+            }
+            .type-badge {
+              display: inline-block;
+              background: #dbeafe;
+              color: #1e40af;
+              padding: 4px 8px;
+              border-radius: 4px;
+              font-size: 12px;
+              margin: 4px 0;
+            }
+            @media print {
+              body {
+                padding: 20px;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          <h1>🧠 Mind Map Documentation</h1>
+      `;
+    }
+    
+    html += `<div class="node-section" style="margin-left: ${indent}px;">`;
+    html += `<h${Math.min(level + 2, 4)}>${nodeData.label || 'Untitled Node'}</h${Math.min(level + 2, 4)}>`;
+    
+    if (nodeData.type) {
+      html += `<span class="type-badge">${nodeData.type}</span><br>`;
+    }
+    
+    if (nodeData.summary) {
+      html += `<p class="summary">${nodeData.summary}</p>`;
+    }
+    
+    if (nodeData.description) {
+      html += `<div class="description">${nodeData.description.replace(/\n/g, '<br>')}</div>`;
+    }
+    
+    if (nodeData.metadata) {
+      html += `<div class="metadata">${JSON.stringify(nodeData.metadata, null, 2).replace(/\n/g, '<br>').replace(/ /g, '&nbsp;')}</div>`;
+    }
+    
+    if (nodeData.children && nodeData.children.length > 0) {
+      nodeData.children.forEach(child => {
+        html += generatePDFHTML(child, level + 1);
+      });
+    }
+    
+    html += '</div>';
+    
+    if (level === 0) {
+      html += `
+        </body>
+        </html>
+      `;
+    }
+    
+    return html;
   };
 
   // Hover effects
@@ -140,7 +282,8 @@ const App = () => {
         onFitView={handleFitView}
         onAddNode={handleAddNode}
         onToggleFullDocumentation={handleToggleFullDocumentation}
-        onDownload={handleDownload}
+        onDownloadJSON={handleDownloadJSON}
+        onDownloadPDF={handleDownloadPDF}
       />
 
       <div className="flex flex-1 overflow-hidden">

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 
 const Toolbar = ({
   onExpandAll,
@@ -6,8 +6,37 @@ const Toolbar = ({
   onFitView,
   onAddNode,
   onToggleFullDocumentation,
-  onDownload
+  onDownloadJSON,
+  onDownloadPDF
 }) => {
+  const [showDownloadDropdown, setShowDownloadDropdown] = useState(false);
+  const dropdownRef = useRef(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowDownloadDropdown(false);
+      }
+    };
+
+    if (showDownloadDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showDownloadDropdown]);
+
+  const handleDownloadClick = (format) => {
+    if (format === 'json') {
+      onDownloadJSON();
+    } else if (format === 'pdf') {
+      onDownloadPDF();
+    }
+    setShowDownloadDropdown(false);
+  };
   const buttons = [
     { label: 'Expand All', icon: '↕️', onClick: onExpandAll },
     { label: 'Collapse All', icon: '↔️', onClick: onCollapseAll },
@@ -38,12 +67,33 @@ const Toolbar = ({
         </div>
 
         <div className="flex items-center space-x-4">
-          <button
-            onClick={onDownload}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition text-white"
-          >
-            Download
-          </button>
+          <div className="relative" ref={dropdownRef}>
+            <button
+              onClick={() => setShowDownloadDropdown(!showDownloadDropdown)}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition text-white flex items-center space-x-2"
+            >
+              <span>Download</span>
+              <span className="text-xs">▼</span>
+            </button>
+            {showDownloadDropdown && (
+              <div className="absolute right-0 mt-2 w-40 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-50">
+                <button
+                  onClick={() => handleDownloadClick('json')}
+                  className="w-full text-left px-4 py-2 text-white hover:bg-gray-700 rounded-t-lg flex items-center space-x-2"
+                >
+                  <span>📄</span>
+                  <span>JSON</span>
+                </button>
+                <button
+                  onClick={() => handleDownloadClick('pdf')}
+                  className="w-full text-left px-4 py-2 text-white hover:bg-gray-700 rounded-b-lg flex items-center space-x-2"
+                >
+                  <span>📑</span>
+                  <span>PDF</span>
+                </button>
+              </div>
+            )}
+          </div>
           <div className="text-sm text-gray-400">
             <span className="text-green-400">●</span> Interactive Visualization
           </div>
