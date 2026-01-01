@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import MindMap from './components/MindMap';
 import SummaryPanel from './components/SummaryPanel';
 import Toolbar from './components/Toolbar';
+import DocumentationModal from './components/DocumentationModal';
 import ReactData from './data/ReactData.json';
 
 const App = () => {
@@ -190,6 +191,13 @@ const App = () => {
           </div>
         </div>
       </div>
+
+      {/* Full Documentation Modal */}
+      <DocumentationModal
+        isOpen={showFullDoc}
+        onClose={handleToggleFullDocumentation}
+        data={data}
+      />
     </div>
   );
 };
